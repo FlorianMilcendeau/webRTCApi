@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn decode_test() {
-        let str_decoded = decode("SGVsbG8gd29ybGQ=").expect("Cannot decode");
+        let str_decoded = decode("SGVsbG8gd29ybGQ=").unwrap();
         assert_eq!(str_decoded, "Hello world");
     }
 }
