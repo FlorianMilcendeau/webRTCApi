@@ -1,1 +1,3 @@
+mod signal;
+
 fn main() {}

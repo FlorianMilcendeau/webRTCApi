@@ -11,3 +11,20 @@ pub fn decode(s: &str) -> Result<String> {
 
     Ok(String::from_utf8(b)?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encode_test() {
+        let str_encoded = encode("Hello world");
+        assert_eq!(str_encoded, "SGVsbG8gd29ybGQ=");
+    }
+
+    #[test]
+    fn decode_test() {
+        let str_decoded = decode("SGVsbG8gd29ybGQ=").expect("Cannot decode");
+        assert_eq!(str_decoded, "Hello world");
+    }
+}
