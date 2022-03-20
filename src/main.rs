@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
     let desc_data = signal::decode(line.as_str())?;
     let offer = serde_json::from_str::<RTCSessionDescription>(&desc_data)?;
 
-    let peer_connection = broadcast::peer_connection().await?;
+    let peer_connection = broadcast::create_peer_connection().await?;
 
     peer_connection
         .add_transceiver_from_kind(RTPCodecType::Video, &[])
@@ -127,7 +127,7 @@ async fn main() -> Result<()> {
             let desc_data = signal::decode(line.as_str())?;
             let receiver_only_offer = serde_json::from_str::<RTCSessionDescription>(&desc_data)?;
 
-            let peer_connection = broadcast::peer_connection().await?;
+            let peer_connection = broadcast::create_peer_connection().await?;
 
             let rtp_sender = peer_connection
                 .add_track(Arc::clone(&local_track) as Arc<dyn TrackLocal + Send + Sync>)
@@ -156,7 +156,7 @@ async fn main() -> Result<()> {
 
             peer_connection.set_local_description(answer).await?;
 
-            let _ = gather_complete.recv().await;
+            gather_complete.recv().await;
 
             if let Some(local_desc) = peer_connection.local_description().await {
                 let json_str = serde_json::to_string(&local_desc)?;

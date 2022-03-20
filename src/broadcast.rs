@@ -8,7 +8,7 @@ use webrtc::interceptor::registry::Registry;
 use webrtc::peer_connection::configuration::RTCConfiguration;
 use webrtc::peer_connection::RTCPeerConnection;
 
-pub async fn peer_connection() -> Result<Arc<RTCPeerConnection>, anyhow::Error> {
+pub async fn create_peer_connection() -> Result<Arc<RTCPeerConnection>, anyhow::Error> {
     let mut media_engine = MediaEngine::default();
 
     media_engine.register_default_codecs()?;
@@ -32,5 +32,5 @@ pub async fn peer_connection() -> Result<Arc<RTCPeerConnection>, anyhow::Error> 
 
     let peer_connection = Arc::new(api.new_peer_connection(config).await?);
 
-    return Ok(peer_connection);
+    Ok(peer_connection)
 }
