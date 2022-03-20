@@ -2126,6 +2126,8 @@ dependencies = [
  "hyper",
  "lazy_static",
  "tokio 1.17.0",
+ "base64",
+ "tokio",
  "webrtc 0.4.0",
 ]
 
