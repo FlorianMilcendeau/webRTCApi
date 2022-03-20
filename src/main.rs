@@ -4,12 +4,6 @@ extern crate dotenv_codegen;
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::time::Duration;
-use webrtc::api::interceptor_registry::register_default_interceptors;
-use webrtc::api::media_engine::MediaEngine;
-use webrtc::api::APIBuilder;
-use webrtc::ice_transport::ice_server::RTCIceServer;
-use webrtc::interceptor::registry::Registry;
-use webrtc::peer_connection::configuration::RTCConfiguration;
 use webrtc::peer_connection::peer_connection_state::RTCPeerConnectionState;
 use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
 use webrtc::rtcp::payload_feedbacks::picture_loss_indication::PictureLossIndication;
@@ -19,6 +13,7 @@ use webrtc::track::track_local::{TrackLocal, TrackLocalWriter};
 use webrtc::track::track_remote::TrackRemote;
 use webrtc::Error;
 
+mod broadcast;
 mod signal;
 
 #[tokio::main]
@@ -32,28 +27,7 @@ async fn main() -> Result<()> {
     let desc_data = signal::decode(line.as_str())?;
     let offer = serde_json::from_str::<RTCSessionDescription>(&desc_data)?;
 
-    let mut media_engine = MediaEngine::default();
-
-    media_engine.register_default_codecs()?;
-
-    let mut registry = Registry::new();
-
-    registry = register_default_interceptors(registry, &mut media_engine)?;
-
-    let api = APIBuilder::new()
-        .with_media_engine(media_engine)
-        .with_interceptor_registry(registry)
-        .build();
-
-    let config = RTCConfiguration {
-        ice_servers: vec![RTCIceServer {
-            urls: vec!["stun:stun.l.google.com:19302".to_owned()],
-            ..Default::default()
-        }],
-        ..Default::default()
-    };
-
-    let peer_connection = Arc::new(api.new_peer_connection(config).await?);
+    let peer_connection = broadcast::peer_connection().await?;
 
     peer_connection
         .add_transceiver_from_kind(RTPCodecType::Video, &[])
@@ -151,30 +125,9 @@ async fn main() -> Result<()> {
 
             let line = sdp_channel_rx.recv().await.unwrap();
             let desc_data = signal::decode(line.as_str())?;
-            let recv_only_offer = serde_json::from_str::<RTCSessionDescription>(&desc_data)?;
+            let receiver_only_offer = serde_json::from_str::<RTCSessionDescription>(&desc_data)?;
 
-            let mut media_engine = MediaEngine::default();
-
-            media_engine.register_default_codecs()?;
-
-            let mut registry = Registry::new();
-
-            registry = register_default_interceptors(registry, &mut media_engine)?;
-
-            let api = APIBuilder::new()
-                .with_media_engine(media_engine)
-                .with_interceptor_registry(registry)
-                .build();
-
-            let config = RTCConfiguration {
-                ice_servers: vec![RTCIceServer {
-                    urls: vec!["stun:stun.l.google.com:19302".to_owned()],
-                    ..Default::default()
-                }],
-                ..Default::default()
-            };
-
-            let peer_connection = Arc::new(api.new_peer_connection(config).await?);
+            let peer_connection = broadcast::peer_connection().await?;
 
             let rtp_sender = peer_connection
                 .add_track(Arc::clone(&local_track) as Arc<dyn TrackLocal + Send + Sync>)
@@ -194,7 +147,7 @@ async fn main() -> Result<()> {
                 .await;
 
             peer_connection
-                .set_remote_description(recv_only_offer)
+                .set_remote_description(receiver_only_offer)
                 .await?;
 
             let answer = peer_connection.create_answer(None).await?;
